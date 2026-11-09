@@ -98,3 +98,36 @@ GET {{api}}/api/incidents/e1da4676-6434-471e-ba13-4800e4886dd2
 
 ### T-06: неіснуючий id (очікується 404)
 GET {{api}}/api/incidents/99999999-9999-9999-9999-999999999999
+
+### A. Звичайний пошук
+GET {{api}}/api/incidents/search?q=USB
+
+### B. Значення, якого немає
+GET {{api}}/api/incidents/search?q=zz-no-match
+
+### C. Єдиний дозволений контрольний ввід: zz-no-match' OR TRUE -- (з пробілом наприкінці)
+GET {{api}}/api/incidents/search?q=zz-no-match%27%20OR%20TRUE%20--%20
+
+### D. Легітимний апостроф
+GET {{api}}/api/incidents/search?q=O%27Brien
+
+### E. Легітимний апостроф у кирилічному слові
+GET {{api}}/api/incidents/search?q=%D0%BA%D0%BE%D0%BC%D0%BF%27%D1%8E%D1%82%D0%B5%D1%80%D0%BD%D0%BE%D0%B3%D0%BE
+
+### Після виправлення. A. Звичайний пошук
+GET {{api}}/api/incidents/search?q=USB
+
+### F. Символ % шукається буквально
+GET {{api}}/api/incidents/search?q=%25
+
+### G. Невідоме sortBy (очікується 400)
+GET {{api}}/api/incidents/search?sortBy=price
+
+### H1. Сортування за замовчуванням
+GET {{api}}/api/incidents/search
+
+### H2. Сортування за severity
+GET {{api}}/api/incidents/search?sortBy=severity
+
+### H3. Сортування за status
+GET {{api}}/api/incidents/search?sortBy=status
