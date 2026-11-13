@@ -4,6 +4,7 @@ using SecureLab.Api.Data.Entities;
 using System.Net.Mail;
 using System.Security.Claims;
 
+
 namespace SecureLab.Api.Scaffolding;
 
 public static class Lab03Identity
