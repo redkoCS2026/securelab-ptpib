@@ -131,3 +131,8 @@ GET {{api}}/api/incidents/search?sortBy=severity
 
 ### H3. Сортування за status
 GET {{api}}/api/incidents/search?sortBy=status
+
+
+### HTTP-запитами з цього файлу точну межу now+5 хв виміряти не можна: сервер бере UtcNow
+### у момент обробки запиту, час рухається, тому відстань до межі в 1 tick (100 нс) відтворити неможливо.
+###  Точну межу перевіряє окрема console-проба lab2defending з фіксованим now.
