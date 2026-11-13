@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using SecureLab.Api.Data;
 using SecureLab.Api.Data.Entities;
 using System.Net.Mail;
+using System.Security.Claims;
 
 namespace SecureLab.Api.Scaffolding;
 
@@ -66,13 +67,17 @@ public static class Lab03Identity
         });
         app.MapPost("/api/auth/logout", () => Results.StatusCode(StatusCodes.Status501NotImplemented));
         // Навмисно хибна навчальна довіра: ЛР 03 замінює заявлений id на verified principal.
+        // Особа береться лише з verified principal, а не з заголовка клієнта.
         app.MapGet("/api/me", async (HttpContext context, SecureLabDbContext db) =>
         {
-            if (!Guid.TryParse(context.Request.Headers["X-Demo-UserId"], out var claimedId))
-                return Results.StatusCode(StatusCodes.Status501NotImplemented);
-            var user = await db.Users.FindAsync(claimedId);
-            return user is null ? Results.NotFound() : Results.Ok(new { user.Id, user.UserName, user.DisplayName });
-        });
+            var idText = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(idText, out var currentId))
+                return Results.Unauthorized();
+            var user = await db.Users.FindAsync(currentId);
+            return user is null
+                ? Results.Unauthorized()
+                : Results.Ok(new { user.Id, user.UserName, user.DisplayName });
+        }).RequireAuthorization();
         // Приклад лише mechanics: не повертає identity і не реалізує оцінювану operation.
         app.MapGet("/api/auth/session-check", () => Results.NoContent()).RequireAuthorization();
     }

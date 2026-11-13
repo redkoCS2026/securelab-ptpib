@@ -1,0 +1,7 @@
+### 1. GET /api/me без входу
+GET http://localhost:5080/api/me
+
+### 4. GET /api/me без cookie, але з чужим заголовком (id Bob)
+GET http://localhost:5080/api/me
+X-Demo-UserId: 10000000-0000-0000-0000-000000000002
+
