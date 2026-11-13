@@ -5,3 +5,14 @@ GET http://localhost:5080/api/me
 GET http://localhost:5080/api/me
 X-Demo-UserId: 10000000-0000-0000-0000-000000000002
 
+### 5. login: невідомий користувач
+POST http://localhost:5080/api/auth/login
+Content-Type: application/json
+
+{ "userName": "no_such_user", "password": "WrongPassw0rd!" }
+
+### 6. login: alice з хибним паролем
+POST http://localhost:5080/api/auth/login
+Content-Type: application/json
+
+{ "userName": "alice", "password": "WrongPassw0rd!" }
