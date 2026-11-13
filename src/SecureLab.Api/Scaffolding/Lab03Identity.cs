@@ -65,7 +65,12 @@ public static class Lab03Identity
             var result = await signIn.PasswordSignInAsync(input.UserName, input.Password, false, false);
             return result.Succeeded ? Results.NoContent() : Results.Unauthorized();
         });
-        app.MapPost("/api/auth/logout", () => Results.StatusCode(StatusCodes.Status501NotImplemented));
+        app.MapPost("/api/auth/logout", async (SignInManager<ApplicationUser> signIn) =>
+        {
+            await signIn.SignOutAsync();
+            return Results.NoContent();
+        });
+
         // Навмисно хибна навчальна довіра: ЛР 03 замінює заявлений id на verified principal.
         // Особа береться лише з verified principal, а не з заголовка клієнта.
         app.MapGet("/api/me", async (HttpContext context, SecureLabDbContext db) =>
