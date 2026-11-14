@@ -43,4 +43,28 @@ public class LoginFailureTests(SecureLabApiFactory factory) : IClassFixture<Secu
         Assert.False(unknownUser.Headers.Contains("Set-Cookie"));
         Assert.False(wrongPassword.Headers.Contains("Set-Cookie"));
     }
+
+    [Fact]
+    public async Task Login_AfterFiveFailures_Returns429_WithRetryAfter()
+    {
+        using var anon = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+        var login = "rate" + Guid.NewGuid().ToString("N")[..10];
+
+        for (var i = 0; i < 5; i++)
+        {
+            var failed = await anon.PostAsJsonAsync("/api/auth/login",
+                new { userName = login, password = "WrongPassw0rd!" });
+            Assert.Equal(HttpStatusCode.Unauthorized, failed.StatusCode);
+        }
+
+        var blocked = await anon.PostAsJsonAsync("/api/auth/login",
+            new { userName = login, password = "WrongPassw0rd!" });
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, blocked.StatusCode);
+        Assert.True(blocked.Headers.Contains("Retry-After"));
+        Assert.False(blocked.Headers.Contains("Set-Cookie"));
+    }
 }

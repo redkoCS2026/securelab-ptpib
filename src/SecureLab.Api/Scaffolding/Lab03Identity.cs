@@ -17,6 +17,7 @@ public static class Lab03Identity
             options.Password.RequiredLength = 10;
         }).AddEntityFrameworkStores<SecureLabDbContext>().AddDefaultTokenProviders();
         builder.Services.AddAuthorization();
+        builder.Services.AddSingleton<LoginThrottle>();
         builder.Services.ConfigureApplicationCookie(options =>
         {
             options.Cookie.HttpOnly = true;
@@ -65,13 +66,37 @@ public static class Lab03Identity
             if (!roleResult.Succeeded) throw new InvalidOperationException("Default role assignment failed.");
             return Results.Created("/api/me", new SignUpResponse(newUser.Id, newUser.UserName!, newUser.DisplayName));
         });
-        app.MapPost("/api/auth/login", async (LoginInput input, SignInManager<ApplicationUser> signIn) =>
+        app.MapPost("/api/auth/login", async (LoginInput input, SignInManager<ApplicationUser> signIn,
+     HttpContext http, LoginThrottle throttle, ILoggerFactory loggers) =>
         {
             if (string.IsNullOrWhiteSpace(input.UserName) || string.IsNullOrEmpty(input.Password))
                 return Results.Unauthorized();
+
+            var audit = loggers.CreateLogger("AuthEvents");
+            var ip = http.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var key = ip + "|" + input.UserName.Trim().ToUpperInvariant();
+
+            if (throttle.IsBlocked(key, out var waitSeconds))
+            {
+                audit.LogWarning("AuthEvent LoginThrottled ip={Ip}", ip);
+                http.Response.Headers.RetryAfter = waitSeconds.ToString();
+                return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+            }
+
             var result = await signIn.PasswordSignInAsync(input.UserName, input.Password, false, false);
-            return result.Succeeded ? Results.NoContent() : Results.Unauthorized();
+            if (result.Succeeded)
+            {
+                throttle.Reset(key);
+                audit.LogInformation("AuthEvent LoginSucceeded ip={Ip}", ip);
+                return Results.NoContent();
+            }
+
+            throttle.RegisterFailure(key);
+            audit.LogWarning("AuthEvent LoginFailed ip={Ip}", ip);
+            return Results.Unauthorized();
         });
+
+
         app.MapPost("/api/auth/logout", async (SignInManager<ApplicationUser> signIn) =>
         {
             await signIn.SignOutAsync();
@@ -107,5 +132,55 @@ public static class Lab03Identity
 
 public sealed record SignUpRequest(string? UserName, string? Email, string? DisplayName, string? Password);
 public sealed record SignUpResponse(Guid Id, string UserName, string DisplayName);
+
+
+public sealed class LoginThrottle
+{
+    private const int MaxFailures = 5;
+    private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
+    private readonly Dictionary<string, (int Count, DateTime Start)> _entries = new();
+    private readonly object _lock = new();
+
+    public bool IsBlocked(string key, out int retryAfterSeconds)
+    {
+        lock (_lock)
+        {
+            retryAfterSeconds = 0;
+            if (!_entries.TryGetValue(key, out var entry)) return false;
+            var left = entry.Start + Window - DateTime.UtcNow;
+            if (left <= TimeSpan.Zero)
+            {
+                _entries.Remove(key);
+                return false;
+            }
+            if (entry.Count < MaxFailures) return false;
+            retryAfterSeconds = (int)Math.Ceiling(left.TotalSeconds);
+            return true;
+        }
+    }
+
+    public void RegisterFailure(string key)
+    {
+        lock (_lock)
+        {
+            var now = DateTime.UtcNow;
+            if (_entries.Count > 10_000)
+            {
+                foreach (var stale in _entries.Where(p => now - p.Value.Start >= Window)
+                                              .Select(p => p.Key).ToList())
+                    _entries.Remove(stale);
+            }
+            if (_entries.TryGetValue(key, out var entry) && now - entry.Start < Window)
+                _entries[key] = (entry.Count + 1, entry.Start);
+            else
+                _entries[key] = (1, now);
+        }
+    }
+
+    public void Reset(string key)
+    {
+        lock (_lock) _entries.Remove(key);
+    }
+}
 
 public sealed record LoginInput(string? UserName, string? Password);
