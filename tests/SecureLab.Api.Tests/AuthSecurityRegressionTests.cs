@@ -49,6 +49,50 @@ public class AuthSecurityRegressionTests(SecureLabApiFactory factory) : IClassFi
     }
 
     [Fact]
+    public async Task A03_ForeignUserIdHeader_DoesNotChangeIdentity()
+    {
+        using var client = await factory.LoginAsync("alice", StudyPassword);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/me");
+        request.Headers.Add("X-Demo-UserId", DbSeeder.BobId.ToString());
+
+        var reply = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, reply.StatusCode);
+
+        using var doc = JsonDocument.Parse(await reply.Content.ReadAsStringAsync());
+        Assert.Equal(DbSeeder.AliceId, doc.RootElement.GetProperty("id").GetGuid());
+    }
+
+    [Fact]
+    public async Task A04_CreateWithoutOwnerField_OwnerIsLoggedInUser()
+    {
+        const string marker = "A04 no owner field";
+        using var client = await factory.LoginAsync("bob", StudyPassword);
+
+        var reply = await client.PostAsJsonAsync("/api/incidents", new
+        {
+            title = marker,
+            description = "Owner is not sent by the client",
+            severity = "Low",
+            occurredAtUtc = DateTime.UtcNow.AddMinutes(-5)
+        });
+
+        Assert.Equal(HttpStatusCode.Created, reply.StatusCode);
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SecureLabDbContext>();
+        try
+        {
+            var saved = await db.Incidents.SingleAsync(i => i.Title == marker);
+            Assert.Equal(DbSeeder.BobId, saved.OwnerUserId);
+        }
+        finally
+        {
+            await db.Incidents.Where(i => i.Title == marker).ExecuteDeleteAsync();
+        }
+    }
+
+    [Fact]
     public async Task A05_ForgedOwnerUserId_IsIgnored_OwnerIsPrincipal()
     {
         const string marker = "A05 forged owner";
@@ -76,5 +120,20 @@ public class AuthSecurityRegressionTests(SecureLabApiFactory factory) : IClassFi
         {
             await db.Incidents.Where(i => i.Title == marker).ExecuteDeleteAsync();
         }
+    }
+
+    [Fact]
+    public async Task A06_AfterLogout_ProtectedEndpointReturns401()
+    {
+        using var client = await factory.LoginAsync("alice", StudyPassword);
+
+        var before = await client.GetAsync("/api/me");
+        Assert.Equal(HttpStatusCode.OK, before.StatusCode);
+
+        var logout = await client.PostAsync("/api/auth/logout", null);
+        Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
+
+        var after = await client.GetAsync("/api/me");
+        Assert.Equal(HttpStatusCode.Unauthorized, after.StatusCode);
     }
 }
