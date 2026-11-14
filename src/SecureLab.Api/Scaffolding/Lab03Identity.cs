@@ -54,7 +54,13 @@ public static class Lab03Identity
                 DisplayName = shownName!
             };
             var created = await users.CreateAsync(newUser, request.Password!);
-            if (!created.Succeeded) return Results.BadRequest(new { message = "Registration failed" });
+            if (!created.Succeeded)
+            {
+                var isDuplicate = created.Errors.Any(e => e.Code is "DuplicateUserName" or "DuplicateEmail");
+                return isDuplicate
+                    ? Results.Conflict(new { message = "Registration failed" })
+                    : Results.BadRequest(new { message = "Registration failed" });
+            }
             var roleResult = await users.AddToRoleAsync(newUser, DbSeeder.ReporterRole);
             if (!roleResult.Succeeded) throw new InvalidOperationException("Default role assignment failed.");
             return Results.Created("/api/me", new SignUpResponse(newUser.Id, newUser.UserName!, newUser.DisplayName));
