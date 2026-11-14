@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>ЛР 3: сценарій автентифікації</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 720px;
+            margin: 20px auto;
+        }
+
+        fieldset {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            margin: 4px 0;
+        }
+
+        pre {
+            background: #f2f2f2;
+            padding: 10px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>ЛР 3: сценарій автентифікації</h1>
+
+    <fieldset>
+        <legend>1. Реєстрація</legend>
+        <label>Ім'я користувача <input id="reg-login" autocomplete="off"></label>
+        <label>Email <input id="reg-mail" autocomplete="off"></label>
+        <label>Ім'я для відображення <input id="reg-name" autocomplete="off"></label>
+        <label>Пароль <input id="reg-pass" type="password" autocomplete="new-password"></label>
+        <button id="btn-register" type="button">Зареєструватися</button>
+    </fieldset>
+
+    <fieldset>
+        <legend>2. Вхід</legend>
+        <label>Ім'я користувача <input id="log-login" autocomplete="off"></label>
+        <label>Пароль <input id="log-pass" type="password" autocomplete="current-password"></label>
+        <button id="btn-login" type="button">Увійти</button>
+    </fieldset>
+
+    <fieldset>
+        <legend>3. Профіль</legend>
+        <button id="btn-me" type="button">Мій профіль (GET /api/me)</button>
+    </fieldset>
+
+    <fieldset>
+        <legend>4. Створення інциденту</legend>
+        <label>Назва <input id="inc-title" autocomplete="off"></label>
+        <label>Опис <input id="inc-desc" autocomplete="off"></label>
+        <label>Серйозність <input id="inc-sev" value="Low" autocomplete="off"></label>
+        <label>Час події <input id="inc-time" type="datetime-local"></label>
+        <button id="btn-create" type="button">Створити інцидент</button>
+    </fieldset>
+
+    <fieldset>
+        <legend>5. Вихід</legend>
+        <button id="btn-logout" type="button">Вийти</button>
+    </fieldset>
+
+    <h2>Результат</h2>
+    <pre id="out">Ще не було запитів.</pre>
+
+    <script src="lab03-scenario.js"></script>
+</body>
+</html>
