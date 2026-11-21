@@ -1,6 +1,8 @@
 using SecureLab.Api.Application.Incidents;
 using SecureLab.Api.Data.Entities;
 using SecureLab.Api.Presentation.Contracts;
+using System.Security.Claims;
+using SecureLab.Api.Data;
 
 namespace SecureLab.Api.Presentation.Endpoints;
 
@@ -19,7 +21,8 @@ public static class IncidentEndpoints
         group.MapGet("/{id:guid}", GetDetailsAsync)         //MapGet("/{id:guid}", GetDetailsAsync)
             .WithName("GetIncidentDetails")
             .Produces<IncidentDetailsResponse>()
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization();
 
         group.MapGet("/severity-summary", GetSeveritySummaryAsync)
       .WithName("GetIncidentSeveritySummary")
@@ -52,11 +55,17 @@ public static class IncidentEndpoints
     }
 
     private static async Task<IResult> GetDetailsAsync(
-        Guid id,
-        IncidentQueries queries,
-        CancellationToken cancellationToken)
+    Guid id,
+    HttpContext httpContext,
+    IncidentQueries queries,
+    CancellationToken cancellationToken)
     {
-        var incident = await queries.GetDetailsAsync(id, cancellationToken);
+        var idText = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(idText, out var currentUserId))
+            return Results.Unauthorized();
+
+        var isAnalyst = httpContext.User.IsInRole(DbSeeder.AnalystRole);
+        var incident = await queries.GetDetailsAsync(id, currentUserId, isAnalyst, cancellationToken);
         return incident is null
             ? Results.Problem(
                 title: "Інцидент не знайдено",
@@ -64,6 +73,7 @@ public static class IncidentEndpoints
                 statusCode: StatusCodes.Status404NotFound)
             : Results.Ok(incident);
     }
+
     private static async Task<IResult> GetSeveritySummaryAsync(
     IncidentQueries queries,
     CancellationToken cancellationToken)

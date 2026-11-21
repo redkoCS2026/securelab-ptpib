@@ -62,13 +62,13 @@ public sealed class IncidentQueries(SecureLabDbContext dbContext, ILogger<Incide
         return result;
     }
 
-    public Task<IncidentDetailsResponse?> GetDetailsAsync(Guid id, CancellationToken cancellationToken)
+    public Task<IncidentDetailsResponse?> GetDetailsAsync(Guid id, Guid currentUserId, bool isAnalyst, CancellationToken cancellationToken)
     {
         logger.LogInformation("Loading incident {IncidentId}", id);
 
         return dbContext.Incidents
             .AsNoTracking()
-            .Where(incident => incident.Id == id)
+                       .Where(incident => incident.Id == id && (isAnalyst || incident.OwnerUserId == currentUserId))
             .Select(incident => new IncidentDetailsResponse(
                 incident.Id,
                 incident.Title,
