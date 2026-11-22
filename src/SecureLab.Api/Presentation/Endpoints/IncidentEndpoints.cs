@@ -23,6 +23,11 @@ public static class IncidentEndpoints
             .Produces<IncidentDetailsResponse>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireAuthorization();
+        
+        group.MapGet("/{id:guid}/status", GetStatusAsync)
+            .WithName("GetIncidentStatus")
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization();
 
         group.MapGet("/severity-summary", GetSeveritySummaryAsync)
       .WithName("GetIncidentSeveritySummary")
@@ -72,6 +77,19 @@ public static class IncidentEndpoints
                 detail: $"Інцидент '{id}' не існує.",
                 statusCode: StatusCodes.Status404NotFound)
             : Results.Ok(incident);
+    }
+
+    private static async Task<IResult>
+        GetStatusAsync(
+        Guid id,
+        HttpContext httpContext,
+        IncidentQueries queries,
+        CancellationToken cancellationToken)
+    {
+        var result = await GetDetailsAsync(id, httpContext, queries, cancellationToken);
+        if(result is Microsoft.AspNetCore.Http.HttpResults.Ok<IncidentDetailsResponse> ok)
+            return Results.Ok (new IncidentStatusResponse(ok.Value!.Id, ok.Value.Status));
+        return result;
     }
 
     private static async Task<IResult> GetSeveritySummaryAsync(

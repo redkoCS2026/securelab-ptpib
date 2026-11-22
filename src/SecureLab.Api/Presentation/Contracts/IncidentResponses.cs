@@ -19,6 +19,9 @@ public sealed record IncidentDetailsResponse(
     string OwnerDisplayName,
     IReadOnlyList<IncidentCommentResponse> Comments);
 
+public sealed record IncidentStatusResponse(Guid id, string Status);
+
+
 public sealed record IncidentCommentResponse(
     Guid Id,
     string AuthorDisplayName,
@@ -29,3 +32,4 @@ public sealed record IncidentSeveritySummaryResponse(
     string Severity,
     int Count);
 
+ 
