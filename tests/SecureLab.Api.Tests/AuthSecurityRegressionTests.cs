@@ -69,7 +69,7 @@ public class AuthSecurityRegressionTests(SecureLabApiFactory factory) : IClassFi
         const string marker = "A04 no owner field";
         using var client = await factory.LoginAsync("bob", StudyPassword);
 
-        var reply = await client.PostAsJsonAsync("/api/incidents", new
+        var reply = await client.PostJsonWithCsrfAsync("/api/incidents", new
         {
             title = marker,
             description = "Owner is not sent by the client",
@@ -98,7 +98,7 @@ public class AuthSecurityRegressionTests(SecureLabApiFactory factory) : IClassFi
         const string marker = "A05 forged owner";
         using var client = await factory.LoginAsync("bob", StudyPassword);
 
-        var reply = await client.PostAsJsonAsync("/api/incidents", new
+        var reply = await client.PostJsonWithCsrfAsync("/api/incidents", new
         {
             title = marker,
             description = "Check owner comes from the cookie",
@@ -130,7 +130,7 @@ public class AuthSecurityRegressionTests(SecureLabApiFactory factory) : IClassFi
         var before = await client.GetAsync("/api/me");
         Assert.Equal(HttpStatusCode.OK, before.StatusCode);
 
-        var logout = await client.PostAsync("/api/auth/logout", null);
+        var logout = await client.PostWithCsrfAsync("/api/auth/logout");
         Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
 
         var after = await client.GetAsync("/api/me");

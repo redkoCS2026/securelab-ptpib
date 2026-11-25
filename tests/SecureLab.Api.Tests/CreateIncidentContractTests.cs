@@ -29,7 +29,7 @@ public sealed class CreateIncidentContractTests(SecureLabApiFactory factory)
         using var client = await factory.LoginAsync("alice", StudyPassword);
         try
         {
-            using var response = await client.PostAsJsonAsync("/api/incidents", body);
+            using var response = await client.PostJsonWithCsrfAsync("/api/incidents", body);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal("application/problem+json",
@@ -62,10 +62,10 @@ public sealed class CreateIncidentContractTests(SecureLabApiFactory factory)
         using var client = await factory.LoginAsync("alice", StudyPassword);
         try
         {
-            using var first = await client.PostAsJsonAsync("/api/incidents", body);
+            using var first = await client.PostJsonWithCsrfAsync("/api/incidents", body);
             Assert.Equal(HttpStatusCode.Created, first.StatusCode);
 
-            using var second = await client.PostAsJsonAsync("/api/incidents", body);
+            using var second = await client.PostJsonWithCsrfAsync("/api/incidents", body);
             Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
             Assert.Equal("application/problem+json",
                 second.Content.Headers.ContentType?.MediaType);
@@ -86,4 +86,3 @@ public sealed class CreateIncidentContractTests(SecureLabApiFactory factory)
         await db.Incidents.Where(item => item.Title == title).ExecuteDeleteAsync();
     }
 }
-
