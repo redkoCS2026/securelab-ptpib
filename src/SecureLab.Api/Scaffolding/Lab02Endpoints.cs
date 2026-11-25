@@ -137,7 +137,7 @@ public static class Lab02Endpoints
                 incident.Id, incident.Title, incident.Description,
                 incident.Severity.ToString(), incident.Status.ToString(),
                 incident.OccurredAtUtc, incident.CreatedAtUtc));
-        }).RequireAuthorization();
+        }).RequireAuthorization().RequireCsrfToken();
     }
 
     // Екранування спецсимволів LIKE: спершу сам \, потім % і _

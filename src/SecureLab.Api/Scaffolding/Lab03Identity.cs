@@ -101,7 +101,7 @@ public static class Lab03Identity
         {
             await signIn.SignOutAsync();
             return Results.NoContent();
-        });
+        }).RequireCsrfToken();
 
         // Навмисно хибна навчальна довіра: ЛР 03 замінює заявлений id на verified principal.
         // Особа береться лише з verified principal, а не з заголовка клієнта.
