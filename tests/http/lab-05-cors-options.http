@@ -1,0 +1,13 @@
+### OPTIONS з дозволеного сайту (4173)
+OPTIONS http://localhost:5080/health
+Origin: http://localhost:4173
+Access-Control-Request-Method: GET
+
+### OPTIONS з недозволеного сайту (4174)
+OPTIONS http://localhost:5080/health
+Origin: http://localhost:4174
+Access-Control-Request-Method: GET
+
+### GET з дозволеного сайту (окремий факт)
+GET http://localhost:5080/health
+Origin: http://localhost:4173
